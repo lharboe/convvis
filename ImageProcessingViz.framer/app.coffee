@@ -120,6 +120,7 @@ for row in [0...activeKernel.matrixSize]
 			template: 
 				value: activeKernel.matrixValues[i]
 			text: "{value}"
+			color: "red"
 			parent: activeKernel.cells[i]
 		i++
 
@@ -170,8 +171,18 @@ updateInputPixelValues = ->
 	values = getInputPixelValues()
 	print('Current Pixels (by column)')
 	for i in [0...values.length]
-		print(values[i])
-		# SHOULD SET EACH CHILD LABEL[i] to values[i]
+		cellValue = Utils.round(values[i])
+		cellLabel = activeInput.cells[i].subLayers[0]
+		
+		# update each cell
+		activeInput.cells[i].backgroundColor = "rgb(#{cellValue}, #{cellValue}, #{cellValue})"
+		cellLabel.text = cellValue
+		
+		# ensure that the text label is visible
+		if (cellValue < 128)
+			cellLabel.color = "white"
+		else
+			cellLabel.color = "black"
 
 # INITIALIZING INPUT MATRIX
 # uses matrix class similiar 
@@ -199,6 +210,10 @@ for row in [0...activeInput.matrixSize]
 			template: 
 				value: activeInput.matrixValues[i]
 			text: "{value}"
+			textAlign: "center"
+			width: cell.width
+			height: cell.height
+			padding: 10
 			fontSize: 12
 			parent: activeInput.cells[i]
 		i++
