@@ -2,27 +2,50 @@
 
 class InputLayer extends Layer
 	constructor: (options={}) ->
-		options.width = activePixelSize * canvasWidth
-		options.height = activePixelSize * canvasHeight
-		options.parent = inputFrame
-
 		super options  
+		@width = activePixelSize * canvasWidth
+		@height = activePixelSize * canvasHeight
+		@parent = inputFrame
 
 class InputPixel extends Layer
 	constructor: (options={}) ->
-		options.parent = inputImage
-		options.size = activePixelSize
 		super options
-	
+		@pixelIndex = options.pixelIndex
+		@size = activePixelSize
+		@parent = inputImage
+		@onTap (event, layer) ->
+			loupeTopLeftCorner = 0
+			print "layer pixel index #{layer.pixelIndex}"
+			currentRow = Math.floor(currentLoupePos/canvasWidth)
+			# left edge
+			if((layer.pixelIndex)%canvasWidth == 0)
+				loupeTopLeftCorner = layer.pixelIndex - Math.floor(activeKernelSize/2)*canvasWidth
+				print "left edge"
+			# center
+			else
+				loupeTopLeftCorner = layer.pixelIndex - Math.floor(activeKernelSize/2)*canvasWidth - Math.floor(activeKernelSize/2)
+			currentLoupePos = loupeTopLeftCorner
+			loupeStepToPixelIndex(loupeTopLeftCorner)
+
+						
+# class InputPixel extends Layer
+# 	constructor: (options={}) ->
+# 		options.parent = inputImage
+# 		options.size = activePixelSize
+# 		@index = options.index
+# ## not sure why this doesn't work
+# # 		@onTap (event, layer) ->
+# # 			print "hey"
+# 		super options
 
 class Matrix extends Layer
 	constructor: (options={}) ->
+		super options
 		@matrixSize = options.matrixSize
 		@matrixValues = options.matrixValues
 		@kernelPadding = options.kernelPadding
 		@kernelStride = options.kernelStride
 		@cells = []
-		super options
 
 class KernelCell extends Layer
 	constructor: (options={}) ->
@@ -34,15 +57,26 @@ class InputPixelCell extends Layer
 
 class Loupe extends Layer
 	constructor: (options={}) ->
-		options.parent = inputFrame
-		options.backgroundColor = "rgba(255,255,0,0.3)"
 		super options
+		@parent = inputFrame
+		@backgroundColor = "rgba(255,255,0,0.3)"
 
 class Sum extends Layer
 	constructor: (options={}) ->
-		options.parent = SumDisplay
-		options.size = SumDisplay.size
 		super options
+		@parent = SumDisplay
+		@size = SumDisplay.size
+		@sumLabel = new TextLayer
+			fontSize: 18
+			textAlign: "center"
+			parent: SumDisplay
+		@updateSum = ->
+			sum = 0
+			for i in [0...activeKernel.matrixValues.length]
+				sum += (activeKernel.matrixValues[i]*activeInput.matrixValues[i])
+			print(sum)
+			print(activeInput)
+			@sumLabel.text = Utils.round(sum)
 
 # CUSTOMIZABLE PARAMETERS
 activePixelSize = 20
@@ -52,6 +86,7 @@ activeKernelStride = 1
 activeKernelPadding = 0
 
 currentLoupePos = 0
+activeSum = new Sum
 
 # GET IMAGE
 
@@ -67,6 +102,11 @@ canvasHeight = Math.round(inputFrame.height / activePixelSize)
 canvasWidth  = Math.round(canvasHeight / (imgSrc.height / imgSrc.width))
 ctx.drawImage(imgSrc, 0, 0, canvasWidth, canvasHeight)
 colorData = ctx.getImageData(0,0,canvasWidth,canvasHeight).data	
+
+
+print canvasHeight
+print canvasWidth
+totalSteps = (canvasHeight-2)*(canvasWidth-2)
 
 # CONVERT PIXEL DATA TO GRAY SCALE
 # STORE PIXELS IN 'grayscaleData'
@@ -87,6 +127,7 @@ i = 0
 for h in [1..canvasHeight]
 	for w in [1..canvasWidth]
 		do ->
+			value = i
 			bgColor = "rgb(#{grayscaleData[i]}, #{grayscaleData[i]}, #{grayscaleData[i]})"
 			pixel = new InputPixel
 				backgroundColor: bgColor
@@ -94,6 +135,17 @@ for h in [1..canvasHeight]
 				y: (h - 1) * activePixelSize
 				scale: 1
 				opacity: 1
+				pixelIndex: i
+			label = new TextLayer
+				template: 
+					value: Utils.round(grayscaleData[i])
+				text: "{value}"
+				truncate: true
+				textAlign: "center"
+				width: pixel.width
+				height: pixel.height
+				fontSize: 10
+				parent: pixel
 		i += 1
 		
 
@@ -127,14 +179,31 @@ for row in [0...activeKernel.matrixSize]
 loupeLayer = new Loupe
 	width: activePixelSize*activeKernel.matrixSize
 	height: activePixelSize*activeKernel.matrixSize
+	
+# loupeLayer.draggable.enabled = true
+# loupeLayer.draggable.constraints = inputFrame.frame
+
+
 
 
 runButton.onTap (event, layer) ->
 		loupeStep()
+		
+loupeStepToPixelIndex = (index) ->
+	print "loup step to pos #{index}"
+	currentRow = Math.floor(currentLoupePos/canvasWidth)+1
+	
+	loupeLayer.x = index%canvasWidth*activePixelSize
+	loupeLayer.y = Math.floor(index/canvasWidth)*activePixelSize
+	currentLoupePos = index
+	updateInputPixelValues()
 
 loupeStep = ->
 	nextPos = currentLoupePos + activeKernelStride
 	currentRow = Math.floor(currentLoupePos/canvasWidth)+1
+	print currentLoupePos
+	print "currentLoupePos #{currentLoupePos}"
+	print "canvasWidth #{canvasWidth}"
 	if(nextPos+activeKernelSize <= canvasWidth*currentRow)
 		loupeLayer.x = (nextPos%canvasWidth*activePixelSize)
 	else
@@ -143,7 +212,7 @@ loupeStep = ->
 			loupeLayer.x = 0
 			loupeLayer.y = 0
 		else
-			nextPos = canvasWidth*currentRow+1
+			nextPos = canvasWidth*currentRow
 			loupeLayer.x = 0
 			loupeLayer.y = loupeLayer.y + activePixelSize
 	currentLoupePos = nextPos
@@ -175,6 +244,7 @@ updateInputPixelValues = ->
 		cellLabel = activeInput.cells[i].subLayers[0]
 		
 		# update each cell
+		activeInput.matrixValues[i] = cellValue
 		activeInput.cells[i].backgroundColor = "rgb(#{cellValue}, #{cellValue}, #{cellValue})"
 		cellLabel.text = cellValue
 		
@@ -183,6 +253,7 @@ updateInputPixelValues = ->
 			cellLabel.color = "white"
 		else
 			cellLabel.color = "black"
+	activeSum.updateSum()
 
 # INITIALIZING INPUT MATRIX
 # uses matrix class similiar 
@@ -218,16 +289,35 @@ for row in [0...activeInput.matrixSize]
 			parent: activeInput.cells[i]
 		i++
 
-activeSum = new Sum
-sum = 0
-for i in [0..activeKernel.cells.length]
-	sum = 10
-	#Code below doesn't work, trying different ways to multiply label of inputMatrix by label of kernelMatirx
-	#product of label of inputMatrix by label of kernelMatirx is added to the sum variable
-	#sum += (activeKernel.cells[i].children*activeInput.cells[i])
-labelSum = new TextLayer
-	template:
-		value: sum
-	text: "{value}"
-	parent: activeSum
+
+
+# activeSum = new Sum
+# sum = 0
+# for i in [0...activeKernel.matrixValues.length]
+# 	sum = 10
+# 	#Code below doesn't work, trying different ways to multiply label of inputMatrix by label of kernelMatirx
+# 	#product of label of inputMatrix by label of kernelMatirx is added to the sum variable
+# 	sum += (activeKernel.matrixValues[i]*activeInput.matrixValues[i])
+# labelSum = new TextLayer
+# 	template:
+# 		value: Utils.round(sum)
+# 	text: "{value}"
+# 	fontSize: 18
+# 	textAlign: "center"
+# 	parent: activeSum
+# 	
+# updateSum = ->
+	
+
+# Create slider
+slider = new SliderComponent
+	parent: toolbar
+	point: Align.center
+	knobSize: 44
+	min: 0
+	max: totalSteps
+
+# Listen for slider value updates
+slider.onValueChange ->
+	Screen.backgroundColor = Color.mix("black", "#00AAFF", slider.value)
 
