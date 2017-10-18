@@ -6,6 +6,14 @@ class InputLayer extends Layer
 		@width = activePixelSize * canvasWidth
 		@height = activePixelSize * canvasHeight
 		@parent = inputFrame
+		
+class OutputLayer extends Layer
+	constructor: (options={}) ->
+		super options
+		@width = activePixelSize*activeOutputSize
+		@height = activePixelSize*activeOutputSize
+		@parent = outputFrame
+		@.center()
 
 class InputPixel extends Layer
 	constructor: (options={}) ->
@@ -27,6 +35,21 @@ class InputPixel extends Layer
 			currentLoupePos = loupeTopLeftCorner
 			loupeStepToPixelIndex(loupeTopLeftCorner)
 
+class OutputPixel extends Layer
+	constructor: (options={}) ->
+		super options
+		@parent = outputImage
+		@size = activePixelSize
+		@pixelIndex = options.pixelIndex
+		@outputValue = options.outputValue
+		@onTap (event, layer) ->
+			print('Pixel clicked ==')
+			print(layer.pixelIndex)
+			print("output clicked, current loop pos")
+			currentLoupePos = parseInt(outputToInputMap[(layer.pixelIndex)])
+			print(typeof(currentLoupePos))
+			print(currentLoupePos)
+			loupeStepToPixelIndex(outputToInputMap[layer.pixelIndex])
 						
 # class InputPixel extends Layer
 # 	constructor: (options={}) ->
@@ -58,39 +81,52 @@ class InputPixelCell extends Layer
 class Loupe extends Layer
 	constructor: (options={}) ->
 		super options
-		@parent = inputFrame
-		@backgroundColor = "rgba(255,255,0,0.3)"
 
 class Sum extends Layer
 	constructor: (options={}) ->
 		super options
 		@parent = SumDisplay
+		@backgroundColor = "white"
 		@size = SumDisplay.size
 		@sumLabel = new TextLayer
 			fontSize: 18
 			textAlign: "center"
 			parent: SumDisplay
+		@sumValue = 0
 		@updateSum = ->
 			sum = 0
 			for i in [0...activeKernel.matrixValues.length]
 				sum += (activeKernel.matrixValues[i]*activeInput.matrixValues[i])
 			print(sum)
 			print(activeInput)
+			@sumValue = sum
 			@sumLabel.text = Utils.round(sum)
+			relativeFontSize = Math.abs(sum)*0.02+12
+			@sumLabel.fontSize = relativeFontSize
+			if sum > 0
+				@sumLabel.color = 'green'
+			else if sum < 0
+				@sumLabel.color = 'red'
+			else
+				@sumLabel.color = 'black'
+			@sumLabel.center()
 
 # CUSTOMIZABLE PARAMETERS
 activePixelSize = 20
 activeKernelSize = 3
 activeKernelValues = [0.1,0.2,0.5,0.8,0.1,0.1,0.2,0.5,0.8]
+#activeKernelValues = [0,0,0,0,1,0,0,0,0]
+activeKernelValues = [-1,-2,-1,0,0,0,1,2,1]
 activeKernelStride = 1
 activeKernelPadding = 0
 
 currentLoupePos = 0
 activeSum = new Sum
 
+
 # GET IMAGE
 
-image = "images/picture.jpg"
+image = "images/flower.jpg"
 imgSrc = new Image()
 imgSrc.src = image
 
@@ -108,6 +144,24 @@ print canvasHeight
 print canvasWidth
 totalSteps = (canvasHeight-2)*(canvasWidth-2)
 
+# OUTPUT SIZE
+# Only works for unit stride of 1, no padding
+activeOutputSize = ((canvasWidth - activeKernelSize) + 1)
+
+inputToOutputMap = {}
+pastPos = 0
+i=0
+for col in [0..(activeOutputSize-1)]
+	for row in [0..(activeOutputSize-1)]
+		inputToOutputMap[row+activeKernelSize*col+(activeOutputSize-1)*col] = i
+		i++
+print(inputToOutputMap)
+
+outputToInputMap = {}
+for key, value of inputToOutputMap
+	outputToInputMap[parseInt(value)] = parseInt(key)
+print(outputToInputMap)
+
 # CONVERT PIXEL DATA TO GRAY SCALE
 # STORE PIXELS IN 'grayscaleData'
 
@@ -122,7 +176,6 @@ for pixel in [0...colorData.length/4]
 inputImage = new InputLayer
 inputImage.center()
 
-
 i = 0
 for h in [1..canvasHeight]
 	for w in [1..canvasWidth]
@@ -136,18 +189,46 @@ for h in [1..canvasHeight]
 				scale: 1
 				opacity: 1
 				pixelIndex: i
-			label = new TextLayer
-				template: 
-					value: Utils.round(grayscaleData[i])
-				text: "{value}"
-				truncate: true
-				textAlign: "center"
-				width: pixel.width
-				height: pixel.height
-				fontSize: 10
-				parent: pixel
+# 			label = new TextLayer
+# 				template: 
+# 					value: Utils.round(grayscaleData[i])
+# 				text: "{value}"
+# 				truncate: true
+# 				textAlign: "center"
+# 				width: pixel.width
+# 				height: pixel.height
+# 				fontSize: 10
+# 				parent: pixel
 		i += 1
-		
+
+outputImage = new OutputLayer
+outputImage.center()
+
+i = 0
+for h in [1..activeOutputSize]
+	for w in [1..activeOutputSize]
+		do ->
+			value = i
+			bgColor = "black"
+			pixel = new OutputPixel
+				backgroundColor: bgColor
+				x: (w - 1) * activePixelSize
+				y: (h - 1) * activePixelSize
+				scale: 1
+				opacity: 1
+				pixelIndex: i
+				outputValue: 0
+# 			label = new TextLayer
+# 				template: 
+# 					value: Utils.round(grayscaleData[i])
+# 				text: "{value}"
+# 				truncate: true
+# 				textAlign: "center"
+# 				width: pixel.width
+# 				height: pixel.height
+# 				fontSize: 10
+# 				parent: pixel
+		i += 1
 
 activeKernel = new Matrix
 	parent: kernelDisplay
@@ -177,26 +258,33 @@ for row in [0...activeKernel.matrixSize]
 		i++
 
 loupeLayer = new Loupe
+	backgroundColor: "rgba(255,255,0,0.3)"
+	parent: inputFrame
 	width: activePixelSize*activeKernel.matrixSize
 	height: activePixelSize*activeKernel.matrixSize
-	
+
+loupeOutput = new Loupe
+	backgroundColor: "rgba(0,255,255,0.3)"
+	parent: outputFrame
+	width: activePixelSize
+	height: activePixelSize
+
 # loupeLayer.draggable.enabled = true
-# loupeLayer.draggable.constraints = inputFrame.frame
-
-
-
+# loupeLayer.draggable.constraints = inputFrame.framee
 
 runButton.onTap (event, layer) ->
 		loupeStep()
-		
+
 loupeStepToPixelIndex = (index) ->
 	print "loup step to pos #{index}"
 	currentRow = Math.floor(currentLoupePos/canvasWidth)+1
-	
+
 	loupeLayer.x = index%canvasWidth*activePixelSize
 	loupeLayer.y = Math.floor(index/canvasWidth)*activePixelSize
 	currentLoupePos = index
 	updateInputPixelValues()
+	activeSum.updateSum()
+	updateOutput(updateActivation())
 
 loupeStep = ->
 	nextPos = currentLoupePos + activeKernelStride
@@ -216,7 +304,19 @@ loupeStep = ->
 			loupeLayer.x = 0
 			loupeLayer.y = loupeLayer.y + activePixelSize
 	currentLoupePos = nextPos
+	print "updated currentLoupePos #{currentLoupePos}"
 	updateInputPixelValues()
+	activeSum.updateSum()
+	updateOutput(updateActivation())
+
+moveOutputLoupe = (outputPos) ->
+	widthDif = (outputFrame.width - outputImage.width)/activeOutputSize
+	heightDif = (outputFrame.height - outputImage.height)/activeOutputSize
+	print('width DIF')
+	print(widthDif)
+	loupeOutput.x = outputImage.subLayers[outputPos].x + activePixelSize 
+	loupeOutput.y = outputImage.subLayers[outputPos].y + activePixelSize 
+
 
 # convertToColumn = (values) ->
 # 	newValues = []
@@ -232,7 +332,10 @@ getInputPixelValues = ->
 	values = []
 	for i in [0...activeKernelSize]
 		for j in [0...activeKernelSize]
+			print(currentLoupePos+i+(j*canvasWidth))
 			values.push(grayscaleData[currentLoupePos+i+(j*canvasWidth)])
+	print('values from')
+	print(values)
 	return values
 
 # UPDATE INPUT PIXEL VALUES
@@ -253,7 +356,21 @@ updateInputPixelValues = ->
 			cellLabel.color = "white"
 		else
 			cellLabel.color = "black"
-	activeSum.updateSum()
+
+updateOutput = (result)->
+	pixel = Math.min(result, 255)
+	sum = activeSum.sumValue
+	print('currentloop')
+	print(currentLoupePos)
+	outputPos = inputToOutputMap[currentLoupePos]
+	moveOutputLoupe(outputPos)
+	outputImage.subLayers[outputPos].backgroundColor = "rgb(#{pixel}, #{pixel}, #{pixel})"
+
+updateActivation = ->
+	sum = activeSum.sumValue
+	result = Math.max(sum, 0)
+	aLabel.text = "Max(#{sum}, 0)=#{result}"
+	return result
 
 # INITIALIZING INPUT MATRIX
 # uses matrix class similiar 
@@ -289,6 +406,21 @@ for row in [0...activeInput.matrixSize]
 			parent: activeInput.cells[i]
 		i++
 
+aFunction = new Layer
+	parent: activationFunction
+	backgroundColor: "white"
+	size: activationFunction.size
+	
+aLabel = new TextLayer
+	parent: aFunction
+	template:
+		value: activeSum.sumValue
+		result: Math.max(activeSum.sumValue)
+	text: "Max({value}, 0)={result}"
+	textAlign: "center"
+	size: aFunction.size
+	fontSize: 14
+
 
 
 # activeSum = new Sum
@@ -320,4 +452,6 @@ slider = new SliderComponent
 # Listen for slider value updates
 slider.onValueChange ->
 	Screen.backgroundColor = Color.mix("black", "#00AAFF", slider.value)
+	
+
 

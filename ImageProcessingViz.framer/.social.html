@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		
+		<meta name="format-detection" content="telephone=no">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<script type="text/javascript">
+		// This automatically sets the right viewport scale on mobile devices
+		(function() {
+ 		var scale = 1 / window.devicePixelRatio
+ 		var viewport = "width=device-width, height=device-height, initial-scale=" + scale + ", maximum-scale=" + scale + ", user-scalable=no"
+ 		var iOS = /iPad|iPhone|iPod/.test(navigator.platform)
+ 		if (iOS) { viewport += ", shrink-to-fit=no" }
+ 		document.write("<meta name=\"viewport\" content=\"" + viewport + "\">")
+		})()
+		</script>
+
+		<link rel="apple-touch-icon" href="framer/images/icon-120.png">
+		<link rel="apple-touch-icon" href="framer/images/icon-76.png" sizes="76x76">
+		<link rel="apple-touch-icon" href="framer/images/icon-120.png" sizes="120x120">
+		<link rel="apple-touch-icon" href="framer/images/icon-152.png" sizes="152x152">
+		<link rel="apple-touch-icon" href="framer/images/icon-180.png" sizes="180x180">
+		<link rel="apple-touch-icon" href="framer/images/icon-192.png" sizes="192x192">
+
+		<link rel="stylesheet" type="text/css" href="framer/style.css?nocache=6d40bc53861208d298f85019e08849ff">
+
+		<script src="framer/coffee-script.js"></script>
+		<script src="framer/framer.js?nocache=d302bd360663dc146bf5d921e2dd228d"></script>
+		<script src="framer/framer.generated.js?nocache=9d0fec5a2f7fd9ed2df6e7cf79de3279"></script>
+		<script src="framer/framer.modules.js?nocache=16ddf72fafc6eb6c415ccacc0f41eb4b"></script>
+		<script src="framer/framer.vekter.js"></script>
+		<script>Framer.Device.hideBezel = false</script><script>document.addEventListener("DOMContentLoaded", function() {window.__framerClientCodeId = 4;window.__framerNew = function (n,loc,th,i){if (i == null) { return i };i.__framerInstanceInfo = _.defaults({name:n,location:loc,hash:th},i.__framerInstanceInfo);_.defaults(i.__framerInstanceInfo,{name:"Untitled"});return i;};(function() {
+  var InputLayer, InputPixel, InputPixelCell, KernelCell, Loupe, Matrix, OuputPixel, OutputLayer, Sum, activeInput, activeKernel, activeKernelPadding, activeKernelSize, activeKernelStride, activeKernelValues, activeOuputSize, activePixelSize, activeSum, avg, canvas, canvasHeight, canvasWidth, cell, colorData, column, ctx, currentLoupePos, fn, getInputPixelValues, grayscaleData, h, i, image, imgSrc, inputImage, k, l, label, loupeLayer, loupeStep, loupeStepToPixelIndex, m, n, o, outputImage, p, pixel, pixelIndex, q, ref, ref1, ref2, ref3, ref4, ref5, ref6, row, slider, totalSteps, updateInputPixelValues, w,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
+
+  InputLayer = (function(superClass) {
+    extend(InputLayer, superClass);
+
+    function InputLayer(options) {
+      if (options == null) {
+        options = {};
+      }
+      InputLayer.__super__.constructor.call(this, options);
+      this.width = activePixelSize * canvasWidth;
+      this.height = activePixelSize * canvasHeight;
+      this.parent = inputFrame;
+    }
+
+    return InputLayer;
+
+  })(Layer);
+
+  OutputLayer = (function(superClass) {
+    extend(OutputLayer, superClass);
+
+    function OutputLayer(options) {
+      if (options == null) {
+        options = {};
+      }
+      OutputLayer.__super__.constructor.call(this, options);
+      this.width = activePixelSize * activeOuputSize;
+      this.height = activePixelSize * activeOuputSize;
+      this.parent = outputFrame;
+    }
+
+    return OutputLayer;
+
+  })(Layer);
+
+  InputPixel = (function(superClass) {
+    extend(InputPixel, superClass);
+
+    function InputPixel(options) {
+      if (options == null) {
+        options = {};
+      }
+      InputPixel.__super__.constructor.call(this, options);
+      this.pixelIndex = options.pixelIndex;
+      this.size = activePixelSize;
+      this.parent = inputImage;
+      this.onTap(function(event, layer) {
+        var currentLoupePos, currentRow, loupeTopLeftCorner;
+        loupeTopLeftCorner = 0;
+        print("layer pixel index " + layer.pixelIndex);
+        currentRow = Math.floor(currentLoupePos / canvasWidth);
+        if (layer.pixelIndex % canvasWidth === 0) {
+          loupeTopLeftCorner = layer.pixelIndex - Math.floor(activeKernelSize / 2) * canvasWidth;
+          print("left edge");
+        } else {
+          loupeTopLeftCorner = layer.pixelIndex - Math.floor(activeKernelSize / 2) * canvasWidth - Math.floor(activeKernelSize / 2);
+        }
+        currentLoupePos = loupeTopLeftCorner;
+        return loupeStepToPixelIndex(loupeTopLeftCorner);
+      });
+    }
+
+    return InputPixel;
+
+  })(Layer);
+
+  OuputPixel = (function(superClass) {
+    extend(OuputPixel, superClass);
+
+    function OuputPixel(options) {
+      if (options == null) {
+        options = {};
+      }
+      OuputPixel.__super__.constructor.call(this, options);
+      this.parent = outputImage;
+      this.size = activePixelSize;
+      this.pixelIndex = options.pixelIndex;
+    }
+
+    return OuputPixel;
+
+  })(Layer);
+
+  Matrix = (function(superClass) {
+    extend(Matrix, superClass);
+
+    function Matrix(options) {
+      if (options == null) {
+        options = {};
+      }
+      Matrix.__super__.constructor.call(this, options);
+      this.matrixSize = options.matrixSize;
+      this.matrixValues = options.matrixValues;
+      this.kernelPadding = options.kernelPadding;
+      this.kernelStride = options.kernelStride;
+      this.cells = [];
+    }
+
+    return Matrix;
+
+  })(Layer);
+
+  KernelCell = (function(superClass) {
+    extend(KernelCell, superClass);
+
+    function KernelCell(options) {
+      if (options == null) {
+        options = {};
+      }
+      KernelCell.__super__.constructor.call(this, options);
+    }
+
+    return KernelCell;
+
+  })(Layer);
+
+  InputPixelCell = (function(superClass) {
+    extend(InputPixelCell, superClass);
+
+    function InputPixelCell(options) {
+      if (options == null) {
+        options = {};
+      }
+      InputPixelCell.__super__.constructor.call(this, options);
+    }
+
+    return InputPixelCell;
+
+  })(Layer);
+
+  Loupe = (function(superClass) {
+    extend(Loupe, superClass);
+
+    function Loupe(options) {
+      if (options == null) {
+        options = {};
+      }
+      Loupe.__super__.constructor.call(this, options);
+      this.parent = inputFrame;
+      this.backgroundColor = "rgba(255,255,0,0.3)";
+    }
+
+    return Loupe;
+
+  })(Layer);
+
+  Sum = (function(superClass) {
+    extend(Sum, superClass);
+
+    function Sum(options) {
+      if (options == null) {
+        options = {};
+      }
+      Sum.__super__.constructor.call(this, options);
+      this.parent = SumDisplay;
+      this.size = SumDisplay.size;
+      this.sumLabel = window.__framerNew(undefined, "81:18-85:1", "#177765251",new TextLayer({
+        fontSize: 18,
+        textAlign: "center",
+        parent: SumDisplay
+      }));
+      this.updateSum = function() {
+        var i, k, ref, sum;
+        sum = 0;
+        for (i = k = 0, ref = activeKernel.matrixValues.length; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
+          sum += activeKernel.matrixValues[i] * activeInput.matrixValues[i];
+        }
+        print(sum);
+        print(activeInput);
+        return this.sumLabel.text = Utils.round(sum);
+      };
+    }
+
+    return Sum;
+
+  })(Layer);
+
+  activePixelSize = 20;
+
+  activeKernelSize = 3;
+
+  activeKernelValues = [0.1, 0.2, 0.5, 0.8, 0.1, 0.1, 0.2, 0.5, 0.8];
+
+  activeKernelValues = [0, 0, 0, 0, 1, 0, 0, 0, 0];
+
+  activeKernelStride = 1;
+
+  activeKernelPadding = 0;
+
+  currentLoupePos = 0;
+
+  activeSum = window.__framerNew("activeSum", "102:12-102:18", "#89885492",new Sum);
+
+  image = "images/picture.jpg";
+
+  imgSrc = window.__framerNew("imgSrc", "107:13-107:19", "?",new Image());
+
+  imgSrc.src = image;
+
+  canvas = document.createElement('canvas');
+
+  ctx = canvas.getContext('2d');
+
+  canvasHeight = Math.round(inputFrame.height / activePixelSize);
+
+  canvasWidth = Math.round(canvasHeight / (imgSrc.height / imgSrc.width));
+
+  ctx.drawImage(imgSrc, 0, 0, canvasWidth, canvasHeight);
+
+  colorData = ctx.getImageData(0, 0, canvasWidth, canvasHeight).data;
+
+  print(canvasHeight);
+
+  print(canvasWidth);
+
+  totalSteps = (canvasHeight - 2) * (canvasWidth - 2);
+
+  activeOuputSize = (canvasWidth - activeKernelSize) + 1;
+
+  grayscaleData = [];
+
+  pixelIndex = 0;
+
+  for (pixel = k = 0, ref = colorData.length / 4; 0 <= ref ? k < ref : k > ref; pixel = 0 <= ref ? ++k : --k) {
+    avg = (colorData[pixelIndex] + colorData[pixelIndex + 1] + colorData[pixelIndex + 2]) / 3;
+    grayscaleData.push(avg);
+    pixelIndex += 4;
+  }
+
+  inputImage = window.__framerNew("inputImage", "139:13-139:26", "#11ab75b1a",new InputLayer);
+
+  inputImage.center();
+
+  i = 0;
+
+  for (h = l = 1, ref1 = canvasHeight; 1 <= ref1 ? l <= ref1 : l >= ref1; h = 1 <= ref1 ? ++l : --l) {
+    fn = function() {
+      var bgColor, label, value;
+      value = i;
+      bgColor = "rgb(" + grayscaleData[i] + ", " + grayscaleData[i] + ", " + grayscaleData[i] + ")";
+      pixel = window.__framerNew("pixel", "148:15-155:2", "#11448ecc5",new InputPixel({
+        backgroundColor: bgColor,
+        x: (w - 1) * activePixelSize,
+        y: (h - 1) * activePixelSize,
+        scale: 1,
+        opacity: 1,
+        pixelIndex: i
+      }));
+      return label = window.__framerNew("label", "155:15-165:1", "#e3ced816",new TextLayer({
+        template: {
+          value: Utils.round(grayscaleData[i])
+        },
+        text: "{value}",
+        truncate: true,
+        textAlign: "center",
+        width: pixel.width,
+        height: pixel.height,
+        fontSize: 10,
+        parent: pixel
+      }));
+    };
+    for (w = m = 1, ref2 = canvasWidth; 1 <= ref2 ? m <= ref2 : m >= ref2; w = 1 <= ref2 ? ++m : --m) {
+      fn();
+      i += 1;
+    }
+  }
+
+  outputImage = window.__framerNew("outputImage", "167:14-167:28", "#bc393ced",new OutputLayer);
+
+  outputImage.center();
+
+  activeKernel = window.__framerNew("activeKernel", "172:19-179:0", "#95cfe7c0",new Matrix({
+    parent: kernelDisplay,
+    size: kernelDisplay.size,
+    matrixSize: activeKernelSize,
+    matrixValues: activeKernelValues,
+    kernelPadding: activeKernelPadding,
+    kernelStride: activeKernelStride
+  }));
+
+  i = 0;
+
+  for (row = n = 0, ref3 = activeKernel.matrixSize; 0 <= ref3 ? n < ref3 : n > ref3; row = 0 <= ref3 ? ++n : --n) {
+    for (column = o = 0, ref4 = activeKernel.matrixSize; 0 <= ref4 ? o < ref4 : o > ref4; column = 0 <= ref4 ? ++o : --o) {
+      cell = window.__framerNew("cell", "183:13-190:1", "#b90a1482",new KernelCell({
+        parent: activeKernel,
+        width: (kernelDisplay.width - activeKernel.matrixSize) / activeKernel.matrixSize,
+        height: (kernelDisplay.width - activeKernel.matrixSize) / activeKernel.matrixSize,
+        x: row * (kernelDisplay.width / activeKernel.matrixSize),
+        y: column * (kernelDisplay.height / activeKernel.matrixSize),
+        backgroundColor: "white"
+      }));
+      activeKernel.cells.push(cell);
+      label = window.__framerNew("label", "191:14-197:1", "#954dc91d",new TextLayer({
+        template: {
+          value: activeKernel.matrixValues[i]
+        },
+        text: "{value}",
+        color: "red",
+        parent: activeKernel.cells[i]
+      }));
+      i++;
+    }
+  }
+
+  loupeLayer = window.__framerNew("loupeLayer", "199:17-208:0", "#132e9fd16",new Loupe({
+    width: activePixelSize * activeKernel.matrixSize,
+    height: activePixelSize * activeKernel.matrixSize
+  }));
+
+  runButton.onTap(function(event, layer) {
+    return loupeStep();
+  });
+
+  loupeStepToPixelIndex = function(index) {
+    var currentRow;
+    print("loup step to pos " + index);
+    currentRow = Math.floor(currentLoupePos / canvasWidth) + 1;
+    loupeLayer.x = index % canvasWidth * activePixelSize;
+    loupeLayer.y = Math.floor(index / canvasWidth) * activePixelSize;
+    currentLoupePos = index;
+    return updateInputPixelValues();
+  };
+
+  loupeStep = function() {
+    var currentRow, nextPos;
+    nextPos = currentLoupePos + activeKernelStride;
+    currentRow = Math.floor(currentLoupePos / canvasWidth) + 1;
+    print(currentLoupePos);
+    print("currentLoupePos " + currentLoupePos);
+    print("canvasWidth " + canvasWidth);
+    if (nextPos + activeKernelSize <= canvasWidth * currentRow) {
+      loupeLayer.x = nextPos % canvasWidth * activePixelSize;
+    } else {
+      if (currentRow + activeKernelSize > canvasHeight) {
+        nextPos = 0;
+        loupeLayer.x = 0;
+        loupeLayer.y = 0;
+      } else {
+        nextPos = canvasWidth * currentRow;
+        loupeLayer.x = 0;
+        loupeLayer.y = loupeLayer.y + activePixelSize;
+      }
+    }
+    currentLoupePos = nextPos;
+    return updateInputPixelValues();
+  };
+
+  getInputPixelValues = function() {
+    var j, p, q, ref5, ref6, values;
+    values = [];
+    for (i = p = 0, ref5 = activeKernelSize; 0 <= ref5 ? p < ref5 : p > ref5; i = 0 <= ref5 ? ++p : --p) {
+      for (j = q = 0, ref6 = activeKernelSize; 0 <= ref6 ? q < ref6 : q > ref6; j = 0 <= ref6 ? ++q : --q) {
+        values.push(grayscaleData[currentLoupePos + i + (j * canvasWidth)]);
+      }
+    }
+    return values;
+  };
+
+  updateInputPixelValues = function() {
+    var cellLabel, cellValue, p, ref5, values;
+    values = getInputPixelValues();
+    print('Current Pixels (by column)');
+    for (i = p = 0, ref5 = values.length; 0 <= ref5 ? p < ref5 : p > ref5; i = 0 <= ref5 ? ++p : --p) {
+      cellValue = Utils.round(values[i]);
+      cellLabel = activeInput.cells[i].subLayers[0];
+      activeInput.matrixValues[i] = cellValue;
+      activeInput.cells[i].backgroundColor = "rgb(" + cellValue + ", " + cellValue + ", " + cellValue + ")";
+      cellLabel.text = cellValue;
+      if (cellValue < 128) {
+        cellLabel.color = "white";
+      } else {
+        cellLabel.color = "black";
+      }
+    }
+    return activeSum.updateSum();
+  };
+
+  activeInput = window.__framerNew("activeInput", "280:18-288:14", "#95cfe7c0",new Matrix({
+    parent: InputPixelDisplay,
+    size: InputPixelDisplay.size,
+    matrixSize: activeKernelSize,
+    matrixValues: getInputPixelValues()
+  }));
+
+  i = 0;
+
+  for (row = p = 0, ref5 = activeInput.matrixSize; 0 <= ref5 ? p < ref5 : p > ref5; row = 0 <= ref5 ? ++p : --p) {
+    for (column = q = 0, ref6 = activeInput.matrixSize; 0 <= ref6 ? q < ref6 : q > ref6; column = 0 <= ref6 ? ++q : --q) {
+      cell = window.__framerNew("cell", "292:13-299:1", "#108c67303",new InputPixelCell({
+        parent: activeInput,
+        width: (InputPixelDisplay.width - activeInput.matrixSize) / activeInput.matrixSize,
+        height: (InputPixelDisplay.width - activeInput.matrixSize) / activeInput.matrixSize,
+        x: row * (InputPixelDisplay.width / activeInput.matrixSize),
+        y: column * (InputPixelDisplay.height / activeInput.matrixSize),
+        backgroundColor: "white"
+      }));
+      activeInput.cells.push(cell);
+      label = window.__framerNew("label", "300:14-310:1", "#df979773",new TextLayer({
+        template: {
+          value: activeInput.matrixValues[i]
+        },
+        text: "{value}",
+        textAlign: "center",
+        width: cell.width,
+        height: cell.height,
+        padding: 10,
+        fontSize: 12,
+        parent: activeInput.cells[i]
+      }));
+      i++;
+    }
+  }
+
+  slider = window.__framerNew("slider", "333:13-340:32", "#162e07437",new SliderComponent({
+    parent: toolbar,
+    point: Align.center,
+    knobSize: 44,
+    min: 0,
+    max: totalSteps
+  }));
+
+  slider.onValueChange(function() {
+    return Screen.backgroundColor = Color.mix("black", "#00AAFF", slider.value);
+  });
+
+}).call(this);
+})</script>
+
+	</head>
+	<body>
+	</body>
+</html>
