@@ -1,5 +1,4 @@
 # CLASSES
-
 class InputLayer extends Layer
 	constructor: (options={}) ->
 		super options  
@@ -365,11 +364,20 @@ updateOutput = (result)->
 	outputPos = inputToOutputMap[currentLoupePos]
 	moveOutputLoupe(outputPos)
 	outputImage.subLayers[outputPos].backgroundColor = "rgb(#{pixel}, #{pixel}, #{pixel})"
+	ReLUOutput.backgroundColor = "rgb(#{pixel}, #{pixel}, #{pixel})"
+	if (pixel < 128)
+		ReLULabel.color = "white"
+	else
+		ReLULabel.color = "black"
+	ReLULabel.text = "#{pixel}"
+	ReLULabel.center()
+	
 
 updateActivation = ->
 	sum = activeSum.sumValue
 	result = Math.max(sum, 0)
 	aLabel.text = "Max(#{sum}, 0)=#{result}"
+	
 	return result
 
 # INITIALIZING INPUT MATRIX
@@ -410,17 +418,30 @@ aFunction = new Layer
 	parent: activationFunction
 	backgroundColor: "white"
 	size: activationFunction.size
+	height: activeKernel.subLayers[0].height
 	
 aLabel = new TextLayer
 	parent: aFunction
 	template:
 		value: activeSum.sumValue
 		result: Math.max(activeSum.sumValue)
-	text: "Max({value}, 0)={result}"
-	textAlign: "center"
+	text: "Max({value}, 0)="
+	textAlign: "left"
 	size: aFunction.size
 	fontSize: 14
 
+ReLUOutput = new KernelCell
+	parent: aLabel
+	backgroundColor: "white"
+	x: aLabel.width - activeKernel.subLayers[0].width
+	size: activeKernel.subLayers[0].size
+
+ReLULabel = new TextLayer
+	parent: ReLUOutput
+	fontSize: 14
+	text: ""
+
+		
 
 
 # activeSum = new Sum
@@ -453,5 +474,3 @@ slider = new SliderComponent
 slider.onValueChange ->
 	Screen.backgroundColor = Color.mix("black", "#00AAFF", slider.value)
 	
-
-
