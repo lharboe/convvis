@@ -22,12 +22,12 @@ class InputPixel extends Layer
 		@parent = inputImage
 		@onTap (event, layer) ->
 			loupeTopLeftCorner = 0
-			print "layer pixel index #{layer.pixelIndex}"
+# 			print "layer pixel index #{layer.pixelIndex}"
 			currentRow = Math.floor(currentLoupePos/canvasWidth)
 			# left edge
 			if((layer.pixelIndex)%canvasWidth == 0)
 				loupeTopLeftCorner = layer.pixelIndex - Math.floor(activeKernelSize/2)*canvasWidth
-				print "left edge"
+# 				print "left edge"
 			# center
 			else
 				loupeTopLeftCorner = layer.pixelIndex - Math.floor(activeKernelSize/2)*canvasWidth - Math.floor(activeKernelSize/2)
@@ -42,12 +42,12 @@ class OutputPixel extends Layer
 		@pixelIndex = options.pixelIndex
 		@outputValue = options.outputValue
 		@onTap (event, layer) ->
-			print('Pixel clicked ==')
-			print(layer.pixelIndex)
-			print("output clicked, current loop pos")
+# 			print('Pixel clicked ==')
+# 			print(layer.pixelIndex)
+# 			print("output clicked, current loop pos")
 			currentLoupePos = parseInt(outputToInputMap[(layer.pixelIndex)])
-			print(typeof(currentLoupePos))
-			print(currentLoupePos)
+# 			print(typeof(currentLoupePos))
+# 			print(currentLoupePos)
 			loupeStepToPixelIndex(outputToInputMap[layer.pixelIndex])
 						
 # class InputPixel extends Layer
@@ -96,8 +96,8 @@ class Sum extends Layer
 			sum = 0
 			for i in [0...activeKernel.matrixValues.length]
 				sum += (activeKernel.matrixValues[i]*activeInput.matrixValues[i])
-			print(sum)
-			print(activeInput)
+# 			print(sum)
+# 			print(activeInput)
 			@sumValue = sum
 			@sumLabel.text = Utils.round(sum)
 			relativeFontSize = Math.abs(sum)*0.02+12
@@ -122,10 +122,11 @@ activeKernelPadding = 0
 currentLoupePos = 0
 activeSum = new Sum
 
+kernelDisplay.index = 6
 
 # GET IMAGE
 
-image = "images/flower.jpg"
+image = "images/picture.jpg"
 imgSrc = new Image()
 imgSrc.src = image
 
@@ -138,9 +139,8 @@ canvasWidth  = Math.round(canvasHeight / (imgSrc.height / imgSrc.width))
 ctx.drawImage(imgSrc, 0, 0, canvasWidth, canvasHeight)
 colorData = ctx.getImageData(0,0,canvasWidth,canvasHeight).data	
 
-
-print canvasHeight
-print canvasWidth
+# print canvasHeight
+# print canvasWidth
 totalSteps = (canvasHeight-2)*(canvasWidth-2)
 
 # OUTPUT SIZE
@@ -154,12 +154,12 @@ for col in [0..(activeOutputSize-1)]
 	for row in [0..(activeOutputSize-1)]
 		inputToOutputMap[row+activeKernelSize*col+(activeOutputSize-1)*col] = i
 		i++
-print(inputToOutputMap)
+# print(inputToOutputMap)
 
 outputToInputMap = {}
 for key, value of inputToOutputMap
 	outputToInputMap[parseInt(value)] = parseInt(key)
-print(outputToInputMap)
+# print(outputToInputMap)
 
 # CONVERT PIXEL DATA TO GRAY SCALE
 # STORE PIXELS IN 'grayscaleData'
@@ -252,10 +252,15 @@ for row in [0...activeKernel.matrixSize]
 			template: 
 				value: activeKernel.matrixValues[i]
 			text: "{value}"
-			color: "red"
+			padding:
+				top: 12
+			fontSize: 28
+			fontFamily: "monospace"
+			textAlign: "center"
+			width: cell.width
 			parent: activeKernel.cells[i]
 		i++
-
+		
 loupeLayer = new Loupe
 	backgroundColor: "rgba(255,255,0,0.3)"
 	parent: inputFrame
@@ -272,25 +277,181 @@ loupeOutput = new Loupe
 # loupeLayer.draggable.constraints = inputFrame.framee
 
 runButton.onTap (event, layer) ->
-		loupeStep()
+	InputPixelDisplay.stateSwitch("visible")
+	loupeStep()
 
 loupeStepToPixelIndex = (index) ->
-	print "loup step to pos #{index}"
+# 	print "loup step to pos #{index}"
 	currentRow = Math.floor(currentLoupePos/canvasWidth)+1
 
 	loupeLayer.x = index%canvasWidth*activePixelSize
 	loupeLayer.y = Math.floor(index/canvasWidth)*activePixelSize
 	currentLoupePos = index
+			
 	updateInputPixelValues()
 	activeSum.updateSum()
 	updateOutput(updateActivation())
+	
+	animate1()
 
+
+selectedPixels = new Layer
+
+animate1 = ->
+	# scale up the louped pixels to the input display
+	
+	# create a copy of the thing we're animating
+	selectedPixels.destroy()
+	selectedPixels = InputPixelDisplay.copy()	
+	
+	# setup some states
+	selectedPixels.states.small = 
+		x: loupeLayer.x+inputFrame.x-loupeLayer.width
+		y: loupeLayer.y+inputFrame.y-loupeLayer.height
+		scale: loupeLayer.width/InputPixelDisplay.width
+		opacity: 0
+
+	selectedPixels.states.large = 
+		x: InputPixelDisplay.x
+		y: InputPixelDisplay.y
+		scale: 1
+		opacity: 1
+		
+	InputPixelDisplay.states.visible = 
+		opacity: 1
+		index: 5
+
+	InputPixelDisplay.states.hidden = 
+		opacity: 0
+		
+	ReLUOutput.states.start =
+		x: kernelDisplay.x+kernelDisplay.width/2-ReLUOutput.width/2
+		y: kernelDisplay.y+kernelDisplay.height/2-ReLUOutput.height/2+200
+		scale: 1
+		borderWidth: 0
+		opacity: 0
+		index: 2
+		
+	ReLUOutput.states.hidden =
+		opacity: 0
+						
+	# setup and chain the animations
+	selectPixels = new Animation
+		layer: selectedPixels
+		properties:
+			scale: (loupeLayer.width/InputPixelDisplay.width)*1.1
+			opacity: 1
+			borderWidth: 8
+			borderColor: 'yellow'
+		time: 0.7
+		curve: Spring(damping: 0.3)
+			
+	selectPixels.on Events.AnimationEnd, ->
+		moveToDestination.start()
+			
+	moveToDestination = new Animation
+		layer: selectedPixels
+		properties:
+			x: InputPixelDisplay.x
+			y: InputPixelDisplay.y
+			scale: 1
+			opacity: 1
+			borderWidth: 0
+			
+	moveToDestination.on Events.AnimationEnd, ->
+		moveToKernel.start()
+						
+	moveToKernel = new Animation
+		layer: selectedPixels
+		properties:
+			x: kernelDisplay.x
+			y: kernelDisplay.y
+		delay: 1
+			
+	moveToKernel.on Events.AnimationEnd, ->
+		kernelBlend.start()	
+				
+	kernelBlend = new Animation
+		layer: selectedPixels
+		properties:
+			opacity: 0.2
+			
+	kernelBlend.on Events.AnimationEnd, ->
+		produceSum.start()	
+		
+	produceSum = new Animation
+		layer: ReLUOutput
+		properties:
+			x: kernelDisplay.x+kernelDisplay.width/2-ReLUOutput.width/2
+			y: kernelDisplay.y+kernelDisplay.height/2-ReLUOutput.height/2+200
+			opacity: 1
+
+	produceSum.on Events.AnimationEnd, ->
+		moveSumToOutput.start()	
+					
+	moveSumToOutput = new Animation
+		layer: ReLUOutput
+		properties:
+			x: loupeOutput.x+outputFrame.x-loupeOutput.width
+			y: loupeOutput.y+outputFrame.y-loupeOutput.height
+			scale: (loupeOutput.width/ReLUOutput.width)*1.2
+			borderColor: '#2FE6CF'
+			borderWidth: 8
+		delay: 1
+		
+	moveSumToOutput.on Events.AnimationEnd, ->
+		removeOutput.start()					
+		
+	removeOutput = new Animation
+		layer: ReLUOutput
+		properties:
+			opacity: 0
+				
+	removeOutput.on Events.AnimationEnd, ->
+		ReLUOutput.stateSwitch("hidden")
+		selectedPixels.destroy()
+		# it's over!
+
+
+	# start the chain
+	selectedPixels.stateSwitch("small")
+	ReLUOutput.stateSwitch("start")
+	InputPixelDisplay.animate "hidden",
+		time: 0.5
+	selectPixels.start()
+
+# 	InputPixelDisplay.animate
+# 		properties:
+# 			opacity: 0
+# 		time: 0.2
+# 	
+# 	selectedPixels.states.small = 
+# 		x: loupeLayer.x+inputFrame.x-loupeLayer.width
+# 		y: loupeLayer.y+inputFrame.y-loupeLayer.height
+# 		scale: loupeLayer.width/InputPixelDisplay.width
+# 		opacity: 0
+# 
+# 	selectedPixels.states.large = 
+# 		x: InputPixelDisplay.x
+# 		y: InputPixelDisplay.y
+# 		scale: 1
+# 		opacity: 1
+# 				
+# 	selectedPixels.stateSwitch("small")
+# 	
+# 	options = 
+# 		curve: Bezier.ease
+# 		time: 1.2
+# 		
+# 	selectedPixels.stateCycle(["pop", "large"],options)
+
+	
 loupeStep = ->
 	nextPos = currentLoupePos + activeKernelStride
 	currentRow = Math.floor(currentLoupePos/canvasWidth)+1
-	print currentLoupePos
-	print "currentLoupePos #{currentLoupePos}"
-	print "canvasWidth #{canvasWidth}"
+# 	print currentLoupePos
+# 	print "currentLoupePos #{currentLoupePos}"
+# 	print "canvasWidth #{canvasWidth}"
 	if(nextPos+activeKernelSize <= canvasWidth*currentRow)
 		loupeLayer.x = (nextPos%canvasWidth*activePixelSize)
 	else
@@ -303,7 +464,7 @@ loupeStep = ->
 			loupeLayer.x = 0
 			loupeLayer.y = loupeLayer.y + activePixelSize
 	currentLoupePos = nextPos
-	print "updated currentLoupePos #{currentLoupePos}"
+# 	print "updated currentLoupePos #{currentLoupePos}"
 	updateInputPixelValues()
 	activeSum.updateSum()
 	updateOutput(updateActivation())
@@ -311,8 +472,8 @@ loupeStep = ->
 moveOutputLoupe = (outputPos) ->
 	widthDif = (outputFrame.width - outputImage.width)/activeOutputSize
 	heightDif = (outputFrame.height - outputImage.height)/activeOutputSize
-	print('width DIF')
-	print(widthDif)
+# 	print('width DIF')
+# 	print(widthDif)
 	loupeOutput.x = outputImage.subLayers[outputPos].x + activePixelSize 
 	loupeOutput.y = outputImage.subLayers[outputPos].y + activePixelSize 
 
@@ -331,16 +492,16 @@ getInputPixelValues = ->
 	values = []
 	for i in [0...activeKernelSize]
 		for j in [0...activeKernelSize]
-			print(currentLoupePos+i+(j*canvasWidth))
+# 			print(currentLoupePos+i+(j*canvasWidth))
 			values.push(grayscaleData[currentLoupePos+i+(j*canvasWidth)])
-	print('values from')
-	print(values)
+# 	print('values from')
+# 	print(values)
 	return values
 
 # UPDATE INPUT PIXEL VALUES
 updateInputPixelValues = ->
 	values = getInputPixelValues()
-	print('Current Pixels (by column)')
+# 	print('Current Pixels (by column)')
 	for i in [0...values.length]
 		cellValue = Utils.round(values[i])
 		cellLabel = activeInput.cells[i].subLayers[0]
@@ -359,8 +520,8 @@ updateInputPixelValues = ->
 updateOutput = (result)->
 	pixel = Math.min(result, 255)
 	sum = activeSum.sumValue
-	print('currentloop')
-	print(currentLoupePos)
+# 	print('currentloop')
+# 	print(currentLoupePos)
 	outputPos = inputToOutputMap[currentLoupePos]
 	moveOutputLoupe(outputPos)
 	outputImage.subLayers[outputPos].backgroundColor = "rgb(#{pixel}, #{pixel}, #{pixel})"
@@ -409,16 +570,19 @@ for row in [0...activeInput.matrixSize]
 			textAlign: "center"
 			width: cell.width
 			height: cell.height
-			padding: 10
-			fontSize: 12
+			padding:
+				top: 18
+			fontSize: 16
+			fontFamily: "monospace"
 			parent: activeInput.cells[i]
 		i++
+
+SumDisplay.borderWidth = 2
 
 aFunction = new Layer
 	parent: activationFunction
 	backgroundColor: "white"
 	size: activationFunction.size
-	height: activeKernel.subLayers[0].height
 	
 aLabel = new TextLayer
 	parent: aFunction
@@ -426,20 +590,25 @@ aLabel = new TextLayer
 		value: activeSum.sumValue
 		result: Math.max(activeSum.sumValue)
 	text: "Max({value}, 0)="
-	textAlign: "left"
+	textAlign: "center"
 	size: aFunction.size
-	fontSize: 14
+	fontSize: 18
+	padding:
+		top: 14
+	borderWidth: 2
 
 ReLUOutput = new KernelCell
-	parent: aLabel
 	backgroundColor: "white"
 	x: aLabel.width - activeKernel.subLayers[0].width
 	size: activeKernel.subLayers[0].size
+	opacity: 0
 
 ReLULabel = new TextLayer
 	parent: ReLUOutput
 	fontSize: 14
 	text: ""
+	width: ReLUOutput.width
+	textAlign: "center"
 
 		
 
@@ -461,6 +630,8 @@ ReLULabel = new TextLayer
 # 	
 # updateSum = ->
 	
+#onload
+loupeStepToPixelIndex(0)
 
 # Create slider
 slider = new SliderComponent
