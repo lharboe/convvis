@@ -1,20 +1,20 @@
 {
-  "orientation" : 0,
-  "updateDelay" : 0.3,
+  "orientation" : 90,
+  "updateDelay" : 0.29999999999999999,
   "designModeSelected" : 0,
-  "cachedDeviceHeight" : 720,
+  "cachedDeviceHeight" : 768,
   "contentScale" : 1,
-  "cachedDeviceWidth" : 1280,
+  "cachedDeviceWidth" : 1024,
   "fullScreen" : false,
-  "deviceType" : "sony-w85Oc",
+  "deviceType" : "apple-ipad-air-2-space-gray",
   "sharedPrototype" : true,
   "propertyPanelToggleStates" : {
 
   },
-  "projectId" : "932C6004-01AA-4116-95F7-12AFEFE74C2A",
-  "deviceOrientation" : 0,
+  "projectId" : "F472DB7E-80DE-4CF5-B6DB-4C62F63B21A2",
+  "deviceOrientation" : 90,
   "selectedHand" : "",
-  "showBezel" : true,
+  "showBezel" : false,
   "foldedCodeRanges" : [
 
   ],
